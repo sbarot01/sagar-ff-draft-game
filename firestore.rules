@@ -1,0 +1,37 @@
+// ============================================================
+// FIRESTORE SECURITY RULES
+// ============================================================
+// Paste this into: Firebase Console → Firestore Database → Rules tab
+// Then click "Publish"
+//
+// These rules:
+//   - Allow anyone to READ scores (so leaderboard works for all players)
+//   - Allow anyone to CREATE new scores with a valid shape
+//   - Disallow updates and deletes (scores are immutable once submitted)
+//   - Validate the shape so junk writes fail
+// ============================================================
+
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    match /scores/{scoreId} {
+
+      // Anyone can read all scores (needed for the leaderboard)
+      allow read: if true;
+
+      // Anyone can submit a new score, but it must have the right shape
+      allow create: if
+        request.resource.data.keys().hasAll(['player', 'yards', 'clientTime']) &&
+        request.resource.data.player is string &&
+        request.resource.data.player.size() > 0 &&
+        request.resource.data.player.size() <= 30 &&
+        request.resource.data.yards is number &&
+        request.resource.data.yards >= 0 &&
+        request.resource.data.clientTime is number;
+
+      // No updates or deletes — scores are permanent
+      allow update, delete: if false;
+    }
+  }
+}
