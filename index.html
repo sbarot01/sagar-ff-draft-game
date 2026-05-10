@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>SAGAR'S GRIDIRON DASH — Draft Order Showdown</title>
 
-<!-- Firebase setup: paste your firebaseConfig values below where indicated -->
+<!-- Firebase setup -->
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-app.js";
   import {
@@ -13,27 +13,19 @@
   } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js";
 
   // ============================================================
-  // PASTE YOUR FIREBASE CONFIG HERE
+  // FIREBASE CONFIG
   // From Firebase Console → Project Settings → Your apps → Web app
   // ============================================================
   const firebaseConfig = {
-// Import the functions you need from the SDKs you need
-import { initializeApp } from "firebase/app";
-// TODO: Add SDKs for Firebase products that you want to use
-// https://firebase.google.com/docs/web/setup#available-libraries
+    apiKey: "AIzaSyDJ5XQqJtL0Nxbp-ghPZfFCixK-ZGENX2E",
+    authDomain: "sagar-ff-draft-game.firebaseapp.com",
+    projectId: "sagar-ff-draft-game",
+    storageBucket: "sagar-ff-draft-game.firebasestorage.app",
+    messagingSenderId: "432914737165",
+    appId: "1:432914737165:web:24e052cf7b4826e41f8d44"
+  };
 
-// Your web app's Firebase configuration
-  apiKey: "AIzaSyDJ5XQqJtL0Nxbp-ghPZfFCixK-ZGENX2E",
-  authDomain: "sagar-ff-draft-game.firebaseapp.com",
-  projectId: "sagar-ff-draft-game",
-  storageBucket: "sagar-ff-draft-game.firebasestorage.app",
-  messagingSenderId: "432914737165",
-  appId: "1:432914737165:web:24e052cf7b4826e41f8d44"
-};
-
-// Initialize Firebase
-const app = initializeApp(firebaseConfig);};
-
+  // Initialize Firebase
   const app = initializeApp(firebaseConfig);
   const db = getFirestore(app);
 
@@ -1275,8 +1267,6 @@ function renderLeaderboard(entries, you) {
     if (rank <= 3) row.classList.add('top-3');
     if (rank === 1) row.classList.add('rank-1');
     if (entry.player === you) row.classList.add('you');
-
-    const medal = rank === 1 ? '🏆' : (rank === 2 ? '🥈' : (rank === 3 ? '🥉' : rank));
 
     row.innerHTML = `
       <div class="lb-rank">${rank}</div>
