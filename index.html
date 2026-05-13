@@ -59,15 +59,15 @@
     position: relative;
   }
 
-  /* CRT scanlines overlay */
+  /* CRT scanlines overlay - softened from 0.15 to 0.08 to reduce visual fatigue */
   body::before {
     content: '';
     position: fixed;
     inset: 0;
     background: repeating-linear-gradient(
       0deg,
-      rgba(0,0,0,0.15) 0px,
-      rgba(0,0,0,0.15) 1px,
+      rgba(0,0,0,0.08) 0px,
+      rgba(0,0,0,0.08) 1px,
       transparent 1px,
       transparent 3px
     );
@@ -96,6 +96,7 @@
     flex-direction: column;
     background: #000;
     border: 4px solid #2a1a0a;
+    /* Static shadow - no pulsing animation */
     box-shadow: 0 0 40px rgba(255,150,50,0.15), inset 0 0 60px rgba(0,0,0,0.8);
   }
 
@@ -254,13 +255,8 @@
   @keyframes blink { 0%, 50% { opacity: 1; } 51%, 100% { opacity: 0.2; } }
   .blink { animation: blink 1s infinite; }
 
-  /* Pulsing border */
-  @keyframes pulse {
-    0%, 100% { box-shadow: 0 0 40px rgba(255,150,50,0.15), inset 0 0 60px rgba(0,0,0,0.8); }
-    50% { box-shadow: 0 0 60px rgba(255,150,50,0.3), inset 0 0 60px rgba(0,0,0,0.8); }
-  }
-
-  #gameWrap.playing { animation: pulse 2s infinite; }
+  /* Pulse animation removed - was contributing to baseline visual fatigue.
+     Game wrap now has a static shadow defined above. */
 
   /* Mobile controls hint */
   .controls-hint {
@@ -561,6 +557,7 @@
 // ============ GAME CONSTANTS ============
 const LANES = 3;
 const LANE_PADDING = 0.12; // % of canvas width on each side
+const YARD_LINE_SPACING = 160; // increased from 120 to reduce strobing frequency at high speeds
 
 // League roster - alphabetical except Sagar first
 const ROSTER = [
@@ -606,9 +603,9 @@ function init() {
   resizeCanvas();
   window.addEventListener('resize', resizeCanvas);
 
-  // Init yard lines - spaced further apart (120px) to reduce visual strobing
+  // Init yard lines - spaced 160px apart (up from 120) to reduce visual strobing at high speeds
   for (let i = 0; i < 10; i++) {
-    yardLines.push({ y: i * 120, number: i * 10 });
+    yardLines.push({ y: i * YARD_LINE_SPACING, number: i * 10 });
   }
 
   // Input
@@ -768,14 +765,12 @@ function startGame() {
   document.getElementById('startScreen').classList.add('hidden');
   document.getElementById('gameOverScreen').classList.add('hidden');
   document.getElementById('gameOverScreen').classList.remove('tackled');
-  document.getElementById('gameWrap').classList.add('playing');
 
   showQuarter('1ST QUARTER');
 }
 
 function endGame() {
   gameState = 'gameover';
-  document.getElementById('gameWrap').classList.remove('playing');
 
   const finalScore = Math.floor(yards);
 
@@ -898,7 +893,7 @@ function update(dt) {
   for (const yl of yardLines) {
     yl.y += scrollPx;
     if (yl.y > H + 40) {
-      yl.y -= 10 * 120;
+      yl.y -= 10 * YARD_LINE_SPACING;
       yl.number = (yl.number + 100) % 100;
     }
   }
@@ -1001,38 +996,34 @@ function draw() {
   ctx.fillRect(0, 0, W * LANE_PADDING, H);
   ctx.fillRect(W * (1 - LANE_PADDING), 0, W * LANE_PADDING, H);
 
-  // Field grass texture (alternating bands)
-  ctx.fillStyle = 'rgba(255,255,255,0.03)';
-  const bandHeight = 60;
-  const offset = (yards * 12) % (bandHeight * 2);
-  for (let y = -offset; y < H; y += bandHeight * 2) {
-    ctx.fillRect(W * LANE_PADDING, y, W * (1 - LANE_PADDING * 2), bandHeight);
-  }
+  // Grass bands removed entirely - field is now a uniform solid green.
 
-  // Yard lines - softer cream color, thinner, with motion blur trails to reduce eye strain
-  ctx.fillStyle = '#ffffff';
-  ctx.font = 'bold 20px "Press Start 2P", monospace';
+  // Yard lines - very faint, with mild motion blur. Designed to be barely visible
+  // so they provide just enough forward-motion cue without catching the eye.
   ctx.textAlign = 'center';
 
-  // Calculate trail length based on speed - faster = longer trail = smoother motion
-  const trailIntensity = Math.min(1, scrollSpeed / 18);
-  const trailLength = 4 + trailIntensity * 8;
+  // Trail intensity scales with speed but stays gentle - no bright blooms
+  const speedRatio = scrollSpeed / 6; // 1.0 at start, ~4.0+ at high tiers
+  const trailIntensity = Math.min(1, (speedRatio - 0.5) / 2.5); // 0 at start, 1 by 3x speed
+  const trailLength = 4 + trailIntensity * 16; // shorter trails, max ~20px at top speed
 
   for (const yl of yardLines) {
-    if (yl.y < -20 || yl.y > H + 20) continue;
+    if (yl.y < -40 || yl.y > H + 20) continue;
 
-    // Motion blur: draw faded trail above the line (since it's moving down)
-    if (trailIntensity > 0.1) {
+    // Motion blur trail - much softer than before, never bright
+    if (trailIntensity > 0.05) {
       const grad = ctx.createLinearGradient(0, yl.y - trailLength, 0, yl.y);
-      grad.addColorStop(0, 'rgba(212, 200, 150, 0)');
-      grad.addColorStop(1, `rgba(212, 200, 150, ${0.25 * trailIntensity})`);
+      grad.addColorStop(0, 'rgba(180, 170, 130, 0)');
+      grad.addColorStop(1, `rgba(180, 170, 130, ${0.08 * trailIntensity})`);
       ctx.fillStyle = grad;
       ctx.fillRect(W * LANE_PADDING, yl.y - trailLength, W * (1 - LANE_PADDING * 2), trailLength);
     }
 
-    // The yard line itself - softer cream, 2px thick
-    ctx.strokeStyle = '#d4c896';
-    ctx.lineWidth = 2;
+    // The yard line itself - very faint at all speeds. Starts at ~0.35 opacity
+    // (barely visible, just enough forward-motion cue) and fades further at high speed.
+    const lineOpacity = 0.35 - trailIntensity * 0.18; // 0.35 at slow, ~0.17 at top speed
+    ctx.strokeStyle = `rgba(190, 178, 138, ${lineOpacity})`;
+    ctx.lineWidth = 1.5;
     ctx.beginPath();
     ctx.moveTo(W * LANE_PADDING, yl.y);
     ctx.lineTo(W * (1 - LANE_PADDING), yl.y);
